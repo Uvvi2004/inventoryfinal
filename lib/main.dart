@@ -29,6 +29,7 @@ class InventoryPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Inventory')),
+
       body: StreamBuilder<List<Item>>(
         stream: service.streamItems(),
         builder: (context, snapshot) {
@@ -57,6 +58,52 @@ class InventoryPage extends StatelessWidget {
             },
           );
         },
+      ),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          final nameController = TextEditingController();
+          final qtyController = TextEditingController();
+
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              title: const Text('Add Item'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                  ),
+                  TextField(
+                    controller: qtyController,
+                    decoration: const InputDecoration(labelText: 'Quantity'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    final name = nameController.text.trim();
+                    final qty = int.tryParse(qtyController.text) ?? 0;
+
+                    if (name.isNotEmpty) {
+                      await service.addItem(
+                        Item(id: '', name: name, quantity: qty),
+                      );
+                    }
+
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
