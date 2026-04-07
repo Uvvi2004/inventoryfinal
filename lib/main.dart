@@ -28,7 +28,20 @@ class InventoryPage extends StatelessWidget {
     final service = FirestoreService();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Inventory')),
+      appBar: AppBar(
+        title: const Text('Inventory'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_sweep),
+            onPressed: () async {
+              final items = await service.streamItems().first;
+              for (var item in items) {
+                await service.deleteItem(item.id);
+              }
+            },
+          )
+        ],
+      ),
 
       body: StreamBuilder<List<Item>>(
         stream: service.streamItems(),
@@ -43,83 +56,97 @@ class InventoryPage extends StatelessWidget {
 
           final items = snapshot.data ?? [];
 
-          if (items.isEmpty) {
-            return const Center(child: Text('No items yet.'));
-          }
-
-          return ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (_, i) {
-              final item = items[i];
-
-              return ListTile(
-                title: Text(item.name),
-                subtitle: Text('Qty: ${item.quantity}'),
-
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () async {
-                    await service.deleteItem(item.id);
-                  },
+          return Column(
+            children: [
+              // 🔥 FEATURE 1: TOTAL COUNT
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Total Items: ${items.length}',
+                  style: const TextStyle(fontSize: 18),
                 ),
+              ),
 
-                onTap: () {
-                  final nameController =
-                      TextEditingController(text: item.name);
-                  final qtyController =
-                      TextEditingController(text: item.quantity.toString());
+              if (items.isEmpty)
+                const Expanded(
+                  child: Center(child: Text('No items yet.')),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (_, i) {
+                      final item = items[i];
 
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Edit Item'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextField(
-                            controller: nameController,
-                            decoration:
-                                const InputDecoration(labelText: 'Name'),
-                          ),
-                          TextField(
-                            controller: qtyController,
-                            decoration: const InputDecoration(
-                                labelText: 'Quantity'),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
+                      return ListTile(
+                        title: Text(item.name),
+                        subtitle: Text('Qty: ${item.quantity}'),
+
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () async {
-                            final updatedName =
-                                nameController.text.trim();
-                            final updatedQty =
-                                int.tryParse(qtyController.text);
-
-                            if (updatedName.isEmpty ||
-                                updatedQty == null) {
-                              return;
-                            }
-
-                            await service.updateItem(
-                              Item(
-                                id: item.id,
-                                name: updatedName,
-                                quantity: updatedQty,
-                              ),
-                            );
-
-                            Navigator.pop(context);
+                            await service.deleteItem(item.id);
                           },
-                          child: const Text('Update'),
                         ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
+
+                        onTap: () {
+                          final nameController =
+                              TextEditingController(text: item.name);
+                          final qtyController = TextEditingController(
+                              text: item.quantity.toString());
+
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Edit Item'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextField(
+                                    controller: nameController,
+                                    decoration: const InputDecoration(
+                                        labelText: 'Name'),
+                                  ),
+                                  TextField(
+                                    controller: qtyController,
+                                    decoration: const InputDecoration(
+                                        labelText: 'Quantity'),
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () async {
+                                    final updatedName =
+                                        nameController.text.trim();
+                                    final updatedQty =
+                                        int.tryParse(qtyController.text);
+
+                                    if (updatedName.isEmpty ||
+                                        updatedQty == null) return;
+
+                                    await service.updateItem(
+                                      Item(
+                                        id: item.id,
+                                        name: updatedName,
+                                        quantity: updatedQty,
+                                      ),
+                                    );
+
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Update'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
           );
         },
       ),
@@ -154,9 +181,7 @@ class InventoryPage extends StatelessWidget {
                     final name = nameController.text.trim();
                     final qty = int.tryParse(qtyController.text);
 
-                    if (name.isEmpty || qty == null) {
-                      return;
-                    }
+                    if (name.isEmpty || qty == null) return;
 
                     await service.addItem(
                       Item(id: '', name: name, quantity: qty),
