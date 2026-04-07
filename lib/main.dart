@@ -51,15 +51,77 @@ class InventoryPage extends StatelessWidget {
             itemCount: items.length,
             itemBuilder: (_, i) {
               final item = items[i];
+
               return ListTile(
                 title: Text(item.name),
                 subtitle: Text('Qty: ${item.quantity}'),
+
+                // ❌ DELETE BUTTON (FIXED)
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () async {
+                    await service.deleteItem(item.id);
+                  },
+                ),
+
+                // ✏️ UPDATE
+                onTap: () {
+                  final nameController =
+                      TextEditingController(text: item.name);
+                  final qtyController =
+                      TextEditingController(text: item.quantity.toString());
+
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Edit Item'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextField(
+                            controller: nameController,
+                            decoration:
+                                const InputDecoration(labelText: 'Name'),
+                          ),
+                          TextField(
+                            controller: qtyController,
+                            decoration: const InputDecoration(
+                                labelText: 'Quantity'),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () async {
+                            final updatedName =
+                                nameController.text.trim();
+                            final updatedQty =
+                                int.tryParse(qtyController.text) ?? 0;
+
+                            await service.updateItem(
+                              Item(
+                                id: item.id,
+                                name: updatedName,
+                                quantity: updatedQty,
+                              ),
+                            );
+
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Update'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               );
             },
           );
         },
       ),
 
+      // ➕ ADD
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           final nameController = TextEditingController();
@@ -78,7 +140,8 @@ class InventoryPage extends StatelessWidget {
                   ),
                   TextField(
                     controller: qtyController,
-                    decoration: const InputDecoration(labelText: 'Quantity'),
+                    decoration:
+                        const InputDecoration(labelText: 'Quantity'),
                     keyboardType: TextInputType.number,
                   ),
                 ],
