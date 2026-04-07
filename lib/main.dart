@@ -56,7 +56,6 @@ class InventoryPage extends StatelessWidget {
                 title: Text(item.name),
                 subtitle: Text('Qty: ${item.quantity}'),
 
-                // ❌ DELETE BUTTON (FIXED)
                 trailing: IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () async {
@@ -64,7 +63,6 @@ class InventoryPage extends StatelessWidget {
                   },
                 ),
 
-                // ✏️ UPDATE
                 onTap: () {
                   final nameController =
                       TextEditingController(text: item.name);
@@ -97,7 +95,12 @@ class InventoryPage extends StatelessWidget {
                             final updatedName =
                                 nameController.text.trim();
                             final updatedQty =
-                                int.tryParse(qtyController.text) ?? 0;
+                                int.tryParse(qtyController.text);
+
+                            if (updatedName.isEmpty ||
+                                updatedQty == null) {
+                              return;
+                            }
 
                             await service.updateItem(
                               Item(
@@ -121,7 +124,6 @@ class InventoryPage extends StatelessWidget {
         },
       ),
 
-      // ➕ ADD
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           final nameController = TextEditingController();
@@ -150,13 +152,15 @@ class InventoryPage extends StatelessWidget {
                 TextButton(
                   onPressed: () async {
                     final name = nameController.text.trim();
-                    final qty = int.tryParse(qtyController.text) ?? 0;
+                    final qty = int.tryParse(qtyController.text);
 
-                    if (name.isNotEmpty) {
-                      await service.addItem(
-                        Item(id: '', name: name, quantity: qty),
-                      );
+                    if (name.isEmpty || qty == null) {
+                      return;
                     }
+
+                    await service.addItem(
+                      Item(id: '', name: name, quantity: qty),
+                    );
 
                     Navigator.pop(context);
                   },
